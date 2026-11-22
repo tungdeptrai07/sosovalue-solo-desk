@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>SoSoPulse Solo Desk — One-Person On-Chain Finance</title>
+  <style>
+    body { font-family: system-ui, -apple-system, sans-serif; background: #090d16; color: #e2e8f0; max-width: 860px; margin: 2rem auto; padding: 0 1.25rem; }
+    .row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.75rem; margin: 1rem 0; }
+    .card { background: #111827; border: 1px solid #1f2937; border-radius: 10px; padding: 0.9rem; }
+    input, select { width: 100%; padding: 0.5rem; border-radius: 6px; border: 1px solid #374151; background: #090d16; color: #f8fafc; box-sizing: border-box; margin-top: 0.3rem; }
+    button { background: #f97316; color: #fff; border: none; padding: 0.55rem 1rem; border-radius: 6px; font-weight: 600; cursor: pointer; margin-top: 0.5rem; }
+  </style>
+</head>
+<body>
+  <h1>SoSoPulse Solo Desk</h1>
+  <p>One-person on-chain finance cockpit combining SoSoValue ETF flow signals, SSI index tracking, and automated treasury allocation.</p>
+  <div class="row">
+    <div class="card"><label>Capital (USDC)</label><input id="cap" type="number" value="10000" /></div>
+    <div class="card"><label>Risk Profile</label><select id="risk"><option value="conservative">Conservative</option><option value="balanced" selected>Balanced</option><option value="aggressive">Aggressive</option></select></div>
+    <div class="card"><label>SoSoValue API Key (Optional)</label><input id="key" type="password" placeholder="x-soso-api-key" /></div>
+  </div>
+  <button id="run">Sync SoSoValue Signals &amp; Rebalance</button>
+  <div class="row" id="metrics"></div>
+  <div class="row" id="alloc"></div>
+  <script type="module">
+    import { fetchSoSoSnapshot, computeSoloAllocation } from './sosovalue.mjs';
+    async function render() {
+      const cap = +document.getElementById('cap').value || 0;
+      const risk = document.getElementById('risk').value;
+      const key = document.getElementById('key').value;
+      const snap = await fetchSoSoSnapshot(key);
+      const alloc = computeSoloAllocation(cap, risk);
+      document.getElementById('metrics').innerHTML = `
+        <div class="card"><strong>Source</strong><div>${snap.source}</div></div>
+        <div class="card"><strong>US BTC Spot Inflow</strong><div>$${snap.etfNetInflowUsdM ?? 'Live'}M</div></div>
+        <div class="card"><strong>SSI MAG7 Index</strong><div>${snap.ssiMag7Index ?? 'Live'}</div></div>
+        <div class="card"><strong>Regime</strong><div>${snap.regime ?? 'Synced'}</div></div>`;
+      document.getElementById('alloc').innerHTML = Object.entries(alloc)
+        .map(([k, v]) => `<div class="card"><strong>${k}</strong><div>$${v.toLocaleString()}</div></div>`).join('');
+    }
+    document.getElementById('run').addEventListener('click', render);
+    render();
+  </script>
+</body>
+</html>
